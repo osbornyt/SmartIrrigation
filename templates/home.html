@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Irrigation</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* Resetting default margin and padding */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Body and main container styling */
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    /* Navbar styling */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background-color: #333;
+      color: white;
+    }
+
+    .navbar .title {
+      font-size: 24px;
+    }
+
+    .menu-icon {
+      font-size: 30px;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* Sidebar styling */
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 999;
+      top: 0;
+      left: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+      margin-top:  53px;
+    }
+
+    .sidebar a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 22px;
+      color: white;
+      display: block;
+      transition: 0.3s;
+    }
+
+    .sidebar a:hover {
+      background-color: #111;
+    }
+
+    .sidebar .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      font-size: 36px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .menu-link {
+      margin:  10px;
+      margin-bottom: 20px;
+    }
+    .menu-item-first {
+      margin-top: 30px;
+    }
+    .menu-name {
+      margin-left: 10px;
+    }
+
+    /* Responsive design for mobile */
+    @media screen and (max-width: 768px) {
+      .menu-icon {
+        display: block;
+      }
+
+      .navbar .title {
+        font-size: 20px;
+      }
+    }
+
+    .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: white;
+            padding: 5px;
+            text-align: center;
+            font-size: 18px;
+        }
+        
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        
+
+        .section {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 20px;
+            margin-top: 20px;
+        }
+
+        .info {
+            border:  1px solid black;
+            width:  160px;
+            height:  70px;
+            display: grid;
+            justify-content: center;
+            align-items: center;
+        }
+        .status-alert {
+            border:  1px solid black;
+            width:  250px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #TurnPumpOFF {
+            background-color: red;
+        }
+
+        table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    td {
+      text-align: center;
+    }
+
+    /* Styling for "No data available" row */
+    .no-data {
+      text-align: center;
+      font-style: italic;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="title">Smart Irrigation</div>
+    <div class="menu-icon" onclick="toggleSidebar()">
+      <i class="fas fa-bars"></i>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">&times;</a>
+    <a href="#" onclick="displayHome()" class="menu-link menu-item-first"><i class="fas fa-home"></i><span class="menu-name"> Readings</span></a>
+    <a href="#" onclick="displayHistory()" class="menu-link"><i class="fas fa-history"> </i><span class="menu-name"> History</span></a>
+    <a href="/logout" class="menu-link"> <i class="fas fa-sign-out-alt"></i><span class="menu-name"> Logout</span></a>
+  </div>
+
+  <div class="container" id="homecontainer">
+        
+
+        <!-- Soil Moisture and Irrigation Status -->
+    <div class="section">
+            <div class="info">
+                <div>Soil Moisture</div>
+                <div>54%</div>
+            </div>
+            <div class="info">
+                <div>Irrigation</div>
+                <div>OFF</div>
+            </div>
+    </div>
+        <div class="section">
+            <div class="status-alert" ><span >Alert Low Soil Moisture</span></div>
+        </div>
+        
+    
+    <!-- Buttons for TURNING PUMP -->
+      <button class="button" id="TurnPumpON">Start Irrigation</button>
+        <button class="button" id="TurnPumpOFF">Stop Irrigation</button>
+    </div>
+
+    <div class="container-table" id="tablecontainer" style="display: none;">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>User</th>
+            <th>Sensor</th>
+            <th>Start</th>
+            <th>End</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Row displaying "No data available" -->
+          <tr class="no-data">
+            <td colspan="5">No data available</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  <script>
+    // Function to open the sidebar
+    function toggleSidebar() {
+      document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    // Function to close the sidebar
+    function closeSidebar() {
+      document.getElementById("mySidebar").style.width = "0";
+    }
+
+    function displayHistory(){
+      document.getElementById("homecontainer").style.display = "none";
+      document.getElementById("tablecontainer").style.display = "block";
+      document.getElementById("mySidebar").style.width = "0";
+
+    }
+    function displayHome(){
+      document.getElementById("homecontainer").style.display = "block";
+      document.getElementById("tablecontainer").style.display = "none";
+      document.getElementById("mySidebar").style.width = "0";
+    }
+  </script>
+
+</body>
+</html>
