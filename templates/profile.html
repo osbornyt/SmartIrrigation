@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Body and main container styling */
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+        /* Navbar styling */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background-color: #333;
+      color: white;
+    }
+
+    .navbar .title {
+      font-size: 24px;
+    }
+
+    .menu-icon {
+      font-size: 30px;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* Sidebar styling */
+    .sidebar {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 999;
+      top: 0;
+      left: 0;
+      background-color: #111;
+      overflow-x: hidden;
+      transition: 0.5s;
+      padding-top: 60px;
+      margin-top:  53px;
+    }
+
+    .sidebar a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 22px;
+      color: white;
+      display: block;
+      transition: 0.3s;
+    }
+
+    .sidebar a:hover {
+      background-color: #111;
+    }
+
+    .sidebar .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      font-size: 36px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .menu-link {
+      margin:  10px;
+      margin-bottom: 20px;
+    }
+    .menu-item-first {
+      margin-top: 30px;
+    }
+    .menu-name {
+      margin-left: 10px;
+    }
+
+    /* Responsive design for mobile */
+    @media screen and (max-width: 768px) {
+      .menu-icon {
+        display: block;
+      }
+
+      .navbar .title {
+        font-size: 20px;
+      }
+    }
+
+        .profile-container {
+            width: 90%; /* Adjust width for mobile */
+            max-width: 400px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        .profile-row {
+            margin-bottom: 15px; /* Increase spacing */
+        }
+
+        .profile-label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px; /* Add space below label */
+        }
+
+        .profile-input {
+            width: 100%;
+            padding: 10px; /* Increase padding */
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            font-size: 16px; /* Increase font size */
+        }
+
+        .edit-button, .save-button {
+            padding: 12px 25px; /* Increase button size */
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px; /* Add margin above buttons */
+            width: 100%; /* Full width buttons on mobile */
+            box-sizing: border-box;
+        }
+
+        .save-button {
+            background-color: #008CBA;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .profile-container {
+                padding: 15px; /* Reduce padding on small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+  <div class="navbar">
+    <div class="title">Smart Irrigation</div>
+    <div class="menu-icon" onclick="toggleSidebar()">
+      <i class="fas fa-bars"></i>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">&times;</a>
+    <a href="/"  class="menu-link menu-item-first"><i class="fas fa-home"></i><span class="menu-name"> Home</span></a>
+    <a href="/readings"  class="menu-link"><i class="fas fa-history"> </i><span class="menu-name"> History</span></a>
+    <a href="/profile" class="menu-link"> <i class="fas fa-user avatar-icon"></i><span class="menu-name"> {{ user.username }}</span></a>
+    {% if user.role == "admin" %}
+      <a href="/manageusers" class="menu-link"> <i class="fas fa-users-cog"></i><span class="menu-name"> Manage Users</span></a>  
+    {% endif %}
+    <a href="/logout" class="menu-link"> <i class="fas fa-sign-out-alt"></i><span class="menu-name"> Logout</span></a>
+  </div>
+
+    <div class="profile-container">
+        <h2>User Profile</h2>
+
+        <div class="profile-row">
+            <label class="profile-label">Username:</label>
+            <input type="text" id="username" class="profile-input" value="{{ user.username }}" readonly>
+        </div>
+
+        <div class="profile-row">
+            <label class="profile-label">Email:</label>
+            <input type="email" id="email" class="profile-input" value="{{ user.email }}" readonly>
+        </div>
+
+        <div class="profile-row">
+            <label class="profile-label">First Name:</label>
+            <input type="text" id="first_name" class="profile-input" value="{{ user.first_name }}" readonly>
+        </div>
+
+        <div class="profile-row">
+            <label class="profile-label">Last Name:</label>
+            <input type="text" id="last_name" class="profile-input" value="{{ user.last_name }}" readonly>
+        </div>
+
+        <div class="profile-row">
+            <label class="profile-label">Password:</label>
+            <input type="password" id="password" class="profile-input" value="{{ user.password }}" readonly>
+        </div>
+
+        <button class="edit-button" onclick="editProfile()">Edit Profile</button>
+        <button class="save-button" onclick="saveProfile()">Save Changes</button>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+      document.getElementById("mySidebar").style.width = "250px";
+    }
+
+    // Function to close the sidebar
+    function closeSidebar() {
+      document.getElementById("mySidebar").style.width = "0";
+    }
+
+        function editProfile() {
+            document.getElementById('username').readOnly = false;
+            document.getElementById('email').readOnly = false;
+            document.getElementById('first_name').readOnly = false;
+            document.getElementById('last_name').readOnly = false;
+            document.getElementById('password').readOnly = false;
+
+            document.querySelector('.edit-button').style.display = 'none';
+            document.querySelector('.save-button').style.display = 'block';
+        }
+
+        function saveProfile() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const first_name = document.getElementById('first_name').value;
+            const last_name = document.getElementById('last_name').value;
+            const password = document.getElementById('password').value;
+
+            // Send data to server using fetch or AJAX
+            fetch('/update_profile', { //replace with your route
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    first_name: first_name,
+                    last_name: last_name,
+                    password: password,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Optionally update the displayed values
+                    document.getElementById('username').readOnly = true;
+                    document.getElementById('email').readOnly = true;
+                    document.getElementById('first_name').readOnly = true;
+                    document.getElementById('last_name').readOnly = true;
+                    document.getElementById('password').readOnly = true;
+
+                    document.querySelector('.edit-button').style.display = 'block';
+                    document.querySelector('.save-button').style.display = 'none';
+                } else {
+                    console.log('Failed to update profile.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+
+        }
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Irrigation</title>
+  <title>Readings</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
     /* Resetting default margin and padding */
@@ -280,61 +280,30 @@
       <a href="/manageusers" class="menu-link"> <i class="fas fa-users-cog"></i><span class="menu-name"> Manage Users</span></a>  
     {% endif %}
     <a href="/logout" class="menu-link"> <i class="fas fa-sign-out-alt"></i><span class="menu-name"> Logout</span></a>
-    
   </div>
 
-  <div class="container" id="homecontainer">
-        <input type="hidden" value="{{ user.username }}" id="username">
+  
 
-        <!-- Soil Moisture and Irrigation Status -->
-    <div class="section">
-            <div class="info">
-                <div>Soil Moisture</div>
-                <div id="reading">54%</div>
-            </div>
-            <div class="info">
-                <div>Irrigation</div>
-                <div id="irrigationstatus">{{ pump_state }}</div>
-            </div>
-    </div>
-        <div id="alertDiv" class="section" style="display: none;">
-            <div class="status-alert" ><span >Alert Low Soil Moisture</span></div>
-        </div>
-
-        <div class="section">
-          <div class="autopilot">
-            <span>Autopilot</span>
-            <input type="hidden" id="autopilotstatus" value="1">
-            <label  class="switch">
-              <input type="checkbox" id="toggleCheckboxDiv" {% if checkbox_state %}checked{% endif %}>
-              <span class="slider"></span>
-              <span class="label-text"></span>
-            </label>
-        </div>
-        </div>
-        
-    
-    <!-- Buttons for TURNING PUMP -->
-      <button onclick="irrigation('on')" class="button" id="TurnPumpON">Start Irrigation</button>
-        <button onclick="irrigation('off')" class="button" id="TurnPumpOFF">Stop Irrigation</button>
-    </div>
-
-    <div class="container-table" id="tablecontainer" style="display: none;">
+    <div class="container-table" id="tablecontainer">
       <table>
         <thead>
           <tr>
             <th>No</th>
             <th>Event</th>
             <th>User</th>
-            <th>Start</th>
-            <th>End</th>
+            <th>Time</th>
           </tr>
         </thead>
         <tbody>
           <!-- Row displaying "No data available" -->
-          <tr class="no-data">
-            <td colspan="5">No data available</td>
-          </tr>
+          {% for event in events %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ event.event }}</td>
+                    <td>{{ event.user }}</td>
+                    <td>{{ event.time }}</td>
+                </tr>
+            {% endfor %}
         </tbody>
       </table>
     </div>
@@ -342,69 +311,7 @@
 
   <script>
     
-    function stringToPercentage(str) {
-        // Convert the string to an integer
-        const intValue = parseInt(str, 10);
-        
-        // Ensure the integer is within the range [0, 1023]
-        const clampedValue = Math.min(Math.max(intValue, 0), 1023);
-        
-        // Calculate the percentage based on the max value of 1023
-        const percentage = (clampedValue / 1023) * 100;
-        
-        return (100 - percentage); 
-    }
-    // Function to open the sidebar
-    const checkbox = document.getElementById('toggleCheckboxDiv');
-    const labelText = document.querySelector('.label-text');
 
-// Function to update the label text and toggle the checkbox state
-  function toggleCheckbox() {
-    let autopilot = "ON";
-    if (checkbox.checked) {
-      labelText.textContent = 'On';
-      autopilot = "ON";
-    } else {
-      labelText.textContent = 'Off';
-      autopilot = "OFF";
-    }
-    fetch('/autopilot?state=' + autopilot) // Replace '/data' with your endpoint
-      .then(response => response.text())
-      .then(data => {
-          // Assuming the server returns the new value to be updated
-          console.log(data);
-      })
-      .catch(error => {
-          console.error('Error fetching data:', error);
-      });
-  }
-
-  // Initialize the label based on the current checkbox state
-  toggleCheckbox();
-
-  // Add event listener to handle toggle state change
-  checkbox.addEventListener('change', toggleCheckbox);
-
-  function irrigation(state){
-    let statename = "OFF";
-    const username = document.getElementById("username").value;
-    if(state == "on"){
-      statename = "ON";
-    }
-    const url = '/pump?state=' + statename + "&user=" + username;
-    console.log(url);
-    fetch(url) // Replace '/data' with your endpoint
-      .then(response => response.text())
-      .then(data => {
-          // Assuming the server returns the new value to be updated
-          console.log(data);
-          document.getElementById("irrigationstatus").textContent = statename;
-          document.getElementById('toggleCheckboxDiv').checked = false;
-      })
-      .catch(error => {
-          console.error('Error fetching data:', error);
-      });
-  }  
   
   function toggleSidebar() {
       document.getElementById("mySidebar").style.width = "250px";
@@ -415,50 +322,7 @@
       document.getElementById("mySidebar").style.width = "0";
     }
 
-    function displayHistory(){
-      document.getElementById("homecontainer").style.display = "none";
-      document.getElementById("tablecontainer").style.display = "block";
-      document.getElementById("mySidebar").style.width = "0";
-
-    }
-    function displayHome(){
-      document.getElementById("homecontainer").style.display = "block";
-      document.getElementById("tablecontainer").style.display = "none";
-      document.getElementById("mySidebar").style.width = "0";
-    }
-
-    function fetchReading() {
-        fetch('/fetchdata') // Replace '/data' with your endpoint
-            .then(response => response.text())
-            .then(data => {
-                if(document.getElementById('toggleCheckboxDiv').checked){
-                  console.log(parseInt(data) );
-                  if (parseInt(data) > 400){
-                    document.getElementById("irrigationstatus").textContent = "ON";
-                  }else{
-                    document.getElementById("irrigationstatus").textContent = "OFF";
-                  }
-                }
-                // Assuming the server returns the new value to be updated
-                let reading = stringToPercentage(data);
-                if(parseInt(data) > 400){
-                  document.getElementById("alertDiv").style.display = "flex";
-                }else{
-                  document.getElementById("alertDiv").style.display = "none";
-                }
-                document.getElementById('reading').innerText = stringToPercentage(data).toFixed(2) +"%";
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
-            });
-    }
-
-    // Fetch the value every 5 seconds
-    setInterval(fetchReading, 5000);
     
-    // Initial fetch when the page loads
-    window.onload = fetchReading;
-
 
   </script>
 

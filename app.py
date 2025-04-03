@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime 
 
 app = Flask(__name__)
 
@@ -22,9 +23,149 @@ class User(db.Model):
     last_name = db.Column(db.String(150), nullable=False)
     password = db.Column(db.String(150), nullable=False)
 
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    event = db.Column(db.String(100), nullable=False)
+    user = db.Column(db.String(100), nullable=False)
+    time = db.Column(db.DateTime, nullable=False)
+
+    
 # Create the database tables within an app context
 with app.app_context():
     db.create_all()
+
+data_value = "20"
+pumpstate = "OFF"
+autopilot = "ON"
+
+@app.route('/fetchdata', methods=['GET'])
+def get_data():
+    return str(data_value)
+
+
+@app.route('/data', methods=['GET'])
+def send_data():
+    global data_value
+    value = request.args.get('value')
+    
+    if value:
+        data_value = value
+        return pumpstate + "," + autopilot
+    else:
+        return "No value provided", 400
+
+@app.route('/status', methods=['GET'])
+def send_status():
+    global pumpstate
+    global autopilot
+    return pumpstate + "," + autopilot
+    
+
+@app.route('/autopilot', methods=['GET'])
+def autopilot_state():
+    global autopilot
+    value = request.args.get('state')
+    
+    if value:
+        autopilot = value
+        return "success"
+    else:
+        return "No value provided", 400
+
+@app.route('/pump', methods=['GET'])
+def pump_state():
+    global pumpstate
+    global autopilot
+
+    #Retrieve event details from get request
+    value = request.args.get('state')
+    current_user = request.args.get('user') 
+    event_name = value  
+    current_time = datetime.now()
+    #Create new event  
+    new_event = Event(event=event_name, user=current_user, time=current_time)
+    db.session.add(new_event)
+    db.session.commit()
+
+    #Update status of the system
+    if value:
+        pumpstate = value
+        if (current_user != "autopilot"):
+            autopilot = "OFF"
+        return "success"
+    else:
+        return "No value provided", 400
+
+@app.route('/manageusers')
+def admin_users():
+    if 'user_id' not in session:
+        flash('You must be an admin to access this page.', 'danger')
+        return redirect(url_for('login'))
+
+    user = User.query.get(session['user_id'])
+    users = User.query.all()
+    return render_template('admin_users.html', users=users, user=user)
+
+@app.route('/profile')
+def profile():
+    if 'user_id' not in session:
+        flash('You need to log in first!', 'warning')
+        return redirect(url_for('login'))
+    
+    # Fetch user information from session
+    user = User.query.get(session['user_id'])
+    
+    return render_template('profile.html', user=user)
+
+@app.route('/readings')
+def readings():
+    if 'user_id' not in session:
+        flash('You need to log in first!', 'warning')
+        return redirect(url_for('login'))
+    
+    # Fetch user information from session
+    user = User.query.get(session['user_id'])
+    events = Event.query.order_by(Event.id.desc()).all()
+    # Format the event data for HTML
+    event_list = []
+    for event in events:
+        event_list.append({
+            'event': event.event,
+            'user': event.user,
+            'time': event.time.strftime('%Y-%m-%d %H:%M:%S'),
+        })
+
+    return render_template('readings.html', user=user, events=event_list)
+
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    data = request.get_json()
+    user = User.query.get(session['user_id'])
+    if user:
+        user.username = data['username']
+        user.email = data['email']
+        user.first_name = data['first_name']
+        user.last_name = data['last_name']
+        user.password = data['password'] #consider hashing password
+        db.session.commit()
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False})
+
+@app.route('/update_user', methods=['POST'])
+def update_user():
+    
+    data = request.get_json()
+    user = User.query.get(data['userId'])
+    if user:
+        user.role = data['role']
+        if data['password']:
+            user.password = data['password']
+        db.session.commit()
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'message': 'User not found'})
 
 # Home route
 @app.route('/')
@@ -35,7 +176,13 @@ def home():
     
     # Fetch user information from session
     user = User.query.get(session['user_id'])
-    return render_template('home.html', user=user)
+    checkbox_state = True
+    global pumpstate
+    global autopilot
+    if autopilot == "OFF":
+        checkbox_state = False
+    
+    return render_template('home.html', user=user, checkbox_state=checkbox_state, pump_state=pumpstate)
 
 # Signup route
 @app.route('/signup', methods=['GET', 'POST'])
